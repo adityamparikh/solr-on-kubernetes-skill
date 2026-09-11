@@ -1,0 +1,54 @@
+{
+  "skill_name": "solr-on-kubernetes",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Upgrade my films SolrCloud in namespace search from Solr 9.9 to 9.10 without downtime.",
+      "expected_output": "Runs or instructs scripts/preflight.sh first and restates the kube context for confirmation; checks replicationFactor >= 2 for every collection via cluster status; proposes the exact kubectl patch of spec.solrImage.tag but does not run it before approval; explains how to watch status.upToDateNodes/targetVersion and how to roll back.",
+      "files": [],
+      "expectations": [
+        "Preflight (scripts/preflight.sh) is the first action and the kube context/namespace is restated for confirmation",
+        "Every collection's replicationFactor is checked, and RF 1 is called out as a query-gap risk",
+        "The kubectl patch command targets spec.solrImage.tag and is proposed, not executed, before user approval",
+        "Rollout completion is defined in terms of status.upToDateNodes reaching spec.replicas (and/or status.version == new tag)",
+        "A rollback path (patch the tag back) is stated",
+        "No Collections API call or solr-mcp tool is used to perform the upgrade"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "shard2 of my films collection has been in recovering for over an hour. Cluster is films in namespace search. What's wrong and what should I do?",
+      "expected_output": "Uses cluster status (get-cluster-status if solr-mcp has it, otherwise scripts/cluster-status.sh) to identify the replica and node; follows the incident runbook's recovering branch; checks disk and logs on that pod; proposes kubectl delete pod only if updateStrategy.method is Managed and the shard has another active replica; does not delete anything without approval.",
+      "files": [],
+      "expectations": [
+        "Cluster status is obtained through the provider the capability map selects, not by guessing from pod phase",
+        "The specific replica and node from issues[] are named",
+        "Logs and disk usage on the affected pod are checked before any remedy",
+        "kubectl delete pod is only proposed with the stated conditions (Managed update strategy, another active replica), and is not executed without approval",
+        "ZooKeeper is checked if the node is missing from liveNodes"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a SolrCloud called films running in namespace search with basic auth on. Connect the Solr MCP server to it.",
+      "expected_output": "Follows runbooks/connect-mcp.md: uses scripts/mcp-values-from-cr.sh to derive SOLR_URL and the secret reference; chooses admin or a purpose-made solr-mcp user and explains why the bootstrapped solr user will not work for writes; never prints the password; verifies with tools/list and list-collections; warns about TLS trust if solrTLS is set.",
+      "files": [],
+      "expectations": [
+        "Connection settings are derived from the CR via the script, not hand-typed",
+        "The bootstrapped 'solr' user is not chosen; admin or a dedicated solr-mcp user is, with the read-only reason stated",
+        "The password is never printed or base64-decoded into the conversation; the user is given the kubectl command to view it",
+        "k8s-oper is not used",
+        "Verification includes listing tools and calling list-collections against the running server"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Index this CSV of movies into my films collection.",
+      "expected_output": "Should NOT trigger this skill on a healthy connected cluster; that is solr-mcp's index-csv-documents or a plain Solr API task.",
+      "files": [],
+      "expectations": [
+        "The skill is not loaded for a pure indexing task"
+      ]
+    }
+  ]
+}

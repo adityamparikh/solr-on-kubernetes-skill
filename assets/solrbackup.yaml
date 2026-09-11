@@ -1,0 +1,16 @@
+# Recurring backup of one collection. Solr-side backup name will be "nightly-films".
+# Field names verified against the SolrBackup CRD; maxSaved default is 5.
+apiVersion: solr.apache.org/v1beta1
+kind: SolrBackup
+metadata:
+  name: nightly
+  namespace: search
+spec:
+  solrCloud: films
+  repositoryName: nightly-s3
+  collections:
+    - films
+  recurrence:
+    schedule: "0 2 * * *"        # Go cron spec; "@daily" also works
+    maxSaved: 7
+    # disabled: true             # pause without deleting

@@ -1,0 +1,54 @@
+# Production-shaped SolrCloud: 3 nodes, persistent storage (Retain), managed
+# rolling updates, basic auth, an S3 backup repository. TLS is left out on
+# purpose — add spec.solrTLS per the operator's TLS page once certificates exist.
+# Field names verified against the SolrCloud CRD (apache/solr-operator main).
+# REMINDER: dataStorage.persistent.pvcTemplate is immutable after creation.
+apiVersion: solr.apache.org/v1beta1
+kind: SolrCloud
+metadata:
+  name: films
+  namespace: search
+spec:
+  replicas: 3
+  solrImage:
+    repository: solr
+    tag: "9.9"
+  zookeeperRef:
+    provided:
+      replicas: 3
+      persistence:
+        spec:
+          resources:
+            requests:
+              storage: 5Gi
+  dataStorage:
+    persistent:
+      reclaimPolicy: Retain
+      pvcTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 50Gi
+          # storageClassName: <your-class>
+  updateStrategy:
+    method: Managed
+    managed:
+      maxPodsUnavailable: 1
+      maxShardReplicasUnavailable: 1
+  solrSecurity:
+    authenticationType: Basic
+  backupRepositories:
+    - name: nightly-s3            # this string is the `repository` argument for BACKUP/RESTORE
+      s3:
+        region: us-east-1
+        bucket: films-solr-backups
+        baseLocation: /solr
+        credentials:
+          accessKeyIdSecret:     { name: solr-s3-creds, key: access-key-id }
+          secretAccessKeySecret: { name: solr-s3-creds, key: secret-access-key }
+  solrJavaMem: "-Xms2g -Xmx2g"
+  customSolrKubeOptions:
+    podOptions:
+      resources:
+        requests: { cpu: "1", memory: 4Gi }
+        limits:   { memory: 4Gi }

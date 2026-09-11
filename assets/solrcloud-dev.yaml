@@ -1,0 +1,26 @@
+# Dev/kind SolrCloud: 1 node, ephemeral storage, basic auth on, no TLS.
+# Field names verified against the SolrCloud CRD (apache/solr-operator main).
+apiVersion: solr.apache.org/v1beta1
+kind: SolrCloud
+metadata:
+  name: films
+  namespace: search
+spec:
+  replicas: 1
+  solrImage:
+    repository: solr
+    tag: "9.9"
+  zookeeperRef:
+    provided:
+      replicas: 1
+      ephemeral: {}
+  dataStorage:
+    ephemeral: {}
+  solrSecurity:
+    authenticationType: Basic
+  solrJavaMem: "-Xms512m -Xmx512m"
+  customSolrKubeOptions:
+    podOptions:
+      resources:
+        requests: { cpu: 250m, memory: 1Gi }
+        limits:   { memory: 1Gi }

@@ -1,0 +1,21 @@
+{
+  "_comment": "Two Security API payloads for a least-privilege solr-mcp user. Send as admin via scripts/solr-api.sh. Replace <password> by reading it from the Secret created first (see runbooks/bootstrap.md step 4); never paste it into chat. Permission names are Solr's predefined permissions.",
+  "set-user.json": {
+    "set-user": { "solr-mcp": "<password>" }
+  },
+  "set-user-role.json": {
+    "set-user-role": { "solr-mcp": ["solr-mcp"] },
+    "set-permission": [
+      { "name": "read",                  "role": ["admin", "users", "solr-mcp"] },
+      { "name": "update",                "role": ["admin", "solr-mcp"] },
+      { "name": "collection-admin-edit", "role": ["k8s", "solr-mcp"] },
+      { "name": "collection-admin-read", "role": ["k8s", "solr-mcp"] },
+      { "name": "schema-edit",           "role": ["admin", "solr-mcp"] },
+      { "name": "schema-read",           "role": ["admin", "users", "solr-mcp"] },
+      { "name": "config-read",           "role": ["admin", "solr-mcp"] },
+      { "name": "core-admin-read",       "role": ["admin", "solr-mcp"] },
+      { "name": "metrics-read",          "role": ["admin", "solr-mcp"] }
+    ]
+  },
+  "_note": "set-permission on an existing named permission replaces its role list; the lists above keep the operator's default roles and add solr-mcp. Verify the bootstrapped security.json (kubectl exec … curl admin/authorization) before applying so you do not drop a role the operator relies on."
+}

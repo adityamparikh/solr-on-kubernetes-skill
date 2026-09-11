@@ -1,0 +1,45 @@
+# Plain Deployment for solr-mcp against an operator-managed SolrCloud, until
+# the Helm chart (solr-mcp issue #7) exists. Fill in <image-tag>; generate the
+# SOLR_URL / secret values with scripts/mcp-values-from-cr.sh — do not type them.
+# Env var names verified against solr-mcp main (SOLR_URL, SOLR_USERNAME,
+# SOLR_PASSWORD, PROFILES, OAUTH2_ISSUER_URI).
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: solr-mcp, namespace: search }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solr-mcp
+  namespace: search
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: solr-mcp } }
+  template:
+    metadata: { labels: { app: solr-mcp } }
+    spec:
+      serviceAccountName: solr-mcp
+      containers:
+        - name: solr-mcp
+          image: apache/solr-mcp:<image-tag>
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - { name: PROFILES, value: http }
+            - { name: SOLR_URL, value: "http://films-solrcloud-common.search:80/solr/" }
+            - { name: SOLR_USERNAME, value: admin }          # or solr-mcp (least privilege)
+            - name: SOLR_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: films-solrcloud-security-bootstrap, key: admin }
+            - { name: OAUTH2_ISSUER_URI, value: "https://<issuer>/" }
+          readinessProbe: { httpGet: { path: /actuator/health, port: http }, initialDelaySeconds: 10 }
+          livenessProbe:  { httpGet: { path: /actuator/health, port: http }, initialDelaySeconds: 30 }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits:   { memory: 1Gi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: solr-mcp, namespace: search }
+spec:
+  selector: { app: solr-mcp }
+  ports: [{ name: http, port: 8080, targetPort: http }]
