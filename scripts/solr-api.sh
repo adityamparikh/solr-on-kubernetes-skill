@@ -66,6 +66,7 @@ CFG=$(mktemp); trap 'rm -f "$CFG"' EXIT
   echo "request = \"$METHOD\""
   echo "silent"
   echo "show-error"
+  echo "fail"
   [ -n "$INSECURE" ] && echo "$INSECURE"
   [ -n "$PASS" ] && printf 'user = "%s:%s"\n' "$USER_" "$PASS"
 } > "$CFG"
@@ -91,5 +92,5 @@ while [ $# -gt 0 ]; do
 done
 
 # Stream the config into the pod and run curl against it. -K - reads config from stdin.
-kubectl exec -i "$POD" -n "$NS" -c solrcloud-node -- curl -K - "${ARGS[@]}" < "$CFG"
+kubectl exec -i "$POD" -n "$NS" -c solrcloud-node -- curl -K - ${ARGS[@]+"${ARGS[@]}"} < "$CFG"
 echo

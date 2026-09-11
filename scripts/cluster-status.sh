@@ -14,10 +14,18 @@ COLL="${3:-}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 Q='admin/collections?action=CLUSTERSTATUS&wt=json'
 [ -n "$COLL" ] && Q="$Q&collection=$COLL"
-"$HERE/solr-api.sh" "$NAME" "$NS" GET "$Q" | jq '
-  .cluster as $c
-  | ($c.live_nodes // []) as $live
-  | ($c.collections // {}) as $cols
+RESPONSE=$("$HERE/solr-api.sh" "$NAME" "$NS" GET "$Q")
+printf '%s\n' "$RESPONSE" | jq -e '
+  if type != "object" then error("Invalid CLUSTERSTATUS response")
+  elif .responseHeader.status != 0 or .error != null then error("CLUSTERSTATUS failed")
+  elif (.cluster | type) != "object"
+    or (.cluster.live_nodes | type) != "array"
+    or (.cluster.collections | type) != "object"
+  then error("Invalid CLUSTERSTATUS cluster structure")
+  else . end
+  | .cluster as $c
+  | $c.live_nodes as $live
+  | $c.collections as $cols
   | {
       liveNodes: $live,
       collections: ($cols | with_entries(.value |= {

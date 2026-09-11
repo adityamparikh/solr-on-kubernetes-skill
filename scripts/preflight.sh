@@ -57,8 +57,8 @@ AUTHSECRET=$(j '.spec.solrSecurity.basicAuthSecret // ""')
 TLS=$(j 'if .spec.solrTLS then "yes" else "no" end')
 RECLAIM=$(j '.spec.dataStorage.persistent.reclaimPolicy // (if .spec.dataStorage.ephemeral then "ephemeral" else "Retain (default)" end)')
 PORT=$(j '.spec.solrAddressability.commonServicePort // 80')
-VACATE=$(j '.spec.scaling.vacatePodsOnScaleDown // true')
-POPULATE=$(j '.spec.scaling.populatePodsOnScaleUp // true')
+VACATE=$(j '.spec.scaling.vacatePodsOnScaleDown | if . == null then true else . end')
+POPULATE=$(j '.spec.scaling.populatePodsOnScaleUp | if . == null then true else . end')
 
 echo "image:     $REPO:$TAG"
 echo "replicas:  $REPLICAS"
